@@ -74,8 +74,14 @@ function getFiltered() {
 /* ================= KPIs ================= */
 
 function renderKPIs(data) {
-  document.getElementById('kpi-grid').innerHTML =
-    `<div class="kpi-card"><div class="kpi-value">${data.length}</div><div class="kpi-label">Total Returns</div></div>`;
+  const el = document.getElementById('kpi-grid');
+  if (!el) return; // prevents crash
+
+  el.innerHTML =
+    `<div class="kpi-card">
+      <div class="kpi-value">${data.length}</div>
+      <div class="kpi-label">Total Returns</div>
+    </div>`;
 }
 
 /* ================= TABLE ================= */
