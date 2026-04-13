@@ -1,53 +1,25 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>HYK Tax Dashboard</title>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
-
-<style>
-body { font-family: Arial; background:#f5f7fb; padding:20px; }
-h1 { margin-bottom:10px; }
-.card { background:#fff; padding:15px; border-radius:10px; margin-bottom:15px; }
-</style>
-</head>
-
-<body>
-
-<h1>HYK Tax Dashboard</h1>
-<p>Last Refresh: <span id="refresh-time"></span></p>
-
-<div class="card">
-  <canvas id="statusChart"></canvas>
-</div>
-
-<div class="card">
-  <table border="1" width="100%" id="table">
-    <thead>
-      <tr>
-        <th>Client</th>
-        <th>Status</th>
-        <th>Type</th>
-        <th>Fee</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-</div>
+<!-- 🔥 ONLY SCRIPT PART CHANGED — KEEP YOUR UI SAME -->
 
 <script>
+const TODAY = new Date();
+
 let RAW = [];
 
-/* SAFE CSV PARSER */
+/* ✅ SAFE CSV PARSER */
 function parseCSV(text) {
   return text.trim().split("\n").map(row =>
     row.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g)
   );
 }
 
-/* LOAD GOOGLE SHEET */
+/* ✅ DATE CONVERTER */
+function convertDate(val) {
+  if (!val) return "";
+  const d = new Date(val);
+  return isNaN(d) ? "" : d.toISOString().split("T")[0];
+}
+
+/* ✅ LOAD GOOGLE SHEET */
 async function loadData() {
   try {
     const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSP-WFJVee7OU7RbP7g55ZXSB66gQF_8iPxwU5DKfGACf8Xit1N2Q_Gu6Yois8QoA/pub?gid=1845055850&single=true&output=csv&t=" + Date.now();
@@ -56,31 +28,45 @@ async function loadData() {
     const text = await res.text();
 
     const rows = parseCSV(text);
-    const headers = rows[0].map(h => h.trim());
 
-    RAW = rows.slice(1).map((row, i) => {
+    /* ⚠️ SKIP TOP 2 TITLE ROWS */
+    const headers = rows[2].map(h => h.trim());
+
+    RAW = rows.slice(3).map((row, i) => {
       let obj = {};
       headers.forEach((h, j) => obj[h] = row[j]);
 
       return {
-        id: Number(obj.id || i+1),
-        client: obj.client || "",
-        type: obj.type || "",
-        status: obj.status || "",
-        priority: obj.priority || "",
-        preparer: obj.preparer || "",
-        reviewer: obj.reviewer || "",
-        docsDate: obj.docsDate || "",
-        efileDate: obj.efileDate || "",
-        origDue: obj.origDue || "",
-        extDue: obj.extDue || "",
-        ext: obj.ext || "No",
-        hours: Number(obj.hours || 0),
-        fee: Number(obj.fee || 0),
-        paid: obj.paid || "No",
-        remarks: obj.remarks || ""
+        id: i + 1,
+
+        client: obj["Client Name"] || "",
+        type: obj["Return Type"] || "",
+        status: obj["Return Status"] || "",
+        priority: obj["Priority"] || "",
+
+        preparer: obj["Preparer Name"] || "",
+        reviewer: obj["Reviewer Name"] || "",
+
+        docsDate: convertDate(obj["Docs Received"]),
+        efileDate: convertDate(obj["E-file / Mail Date"]),
+
+        origDue: convertDate(obj["Original Due Date"]),
+        extDue: convertDate(obj["Extended Due Date"]),
+        ext: obj["Extension?"] || "No",
+
+        hours: parseFloat(obj["Time Spent (hrs)"]) || 0,
+
+        fee: Number(
+          (obj["Return Fees ($)"] || "0").replace(/[$,]/g, "")
+        ),
+
+        paid: obj["Payment Received?"] || "No",
+
+        remarks: obj["Remarks / Notes"] || ""
       };
     });
+
+    console.log("DATA LOADED:", RAW);
 
     refreshAll();
 
@@ -89,57 +75,15 @@ async function loadData() {
 
   } catch (err) {
     console.error(err);
-    alert("❌ Google Sheet not loading");
+    alert("❌ Failed to load Google Sheet");
   }
 }
 
-/* RENDER TABLE */
-function renderTable() {
-  const tbody = document.querySelector("#table tbody");
-  tbody.innerHTML = RAW.map(r => `
-    <tr>
-      <td>${r.client}</td>
-      <td>${r.status}</td>
-      <td>${r.type}</td>
-      <td>$${r.fee}</td>
-    </tr>
-  `).join("");
-}
-
-/* CHART */
-let chart;
-function renderChart() {
-  const counts = {};
-  RAW.forEach(r => {
-    counts[r.status] = (counts[r.status] || 0) + 1;
-  });
-
-  const labels = Object.keys(counts);
-  const values = Object.values(counts);
-
-  if (chart) chart.destroy();
-
-  chart = new Chart(document.getElementById("statusChart"), {
-    type: "doughnut",
-    data: {
-      labels,
-      datasets: [{ data: values }]
-    }
-  });
-}
-
-/* RENDER ALL */
-function renderAll() {
-  renderTable();
-  renderChart();
-}
-
-/* INIT */
-buildSlicers();  
+/* 🔄 INIT */
+buildSlicers();
 loadData();
 setInterval(loadData, 60000);
 
+/* 🚨 REMOVE THIS IF EXISTS */
+// refreshAll(); ❌
 </script>
-
-</body>
-</html>
