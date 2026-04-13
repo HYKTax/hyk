@@ -58,26 +58,38 @@ async function loadData() {
     const rows = parseCSV(text);
     const headers = rows[0].map(h => h.trim());
 
-    RAW = rows.slice(1).map(row => {
+    RAW = rows.slice(1).map((row, i) => {
       let obj = {};
-      headers.forEach((h, i) => obj[h] = row[i]);
+      headers.forEach((h, j) => obj[h] = row[j]);
 
       return {
+        id: Number(obj.id || i+1),
         client: obj.client || "",
-        status: obj.status || "",
         type: obj.type || "",
-        fee: Number(obj.fee || 0)
+        status: obj.status || "",
+        priority: obj.priority || "",
+        preparer: obj.preparer || "",
+        reviewer: obj.reviewer || "",
+        docsDate: obj.docsDate || "",
+        efileDate: obj.efileDate || "",
+        origDue: obj.origDue || "",
+        extDue: obj.extDue || "",
+        ext: obj.ext || "No",
+        hours: Number(obj.hours || 0),
+        fee: Number(obj.fee || 0),
+        paid: obj.paid || "No",
+        remarks: obj.remarks || ""
       };
     });
 
-    renderAll();
+    refreshAll();
 
     document.getElementById('refresh-time').textContent =
       new Date().toLocaleTimeString();
 
   } catch (err) {
     console.error(err);
-    alert("❌ Failed to load Google Sheet");
+    alert("❌ Google Sheet not loading");
   }
 }
 
@@ -123,6 +135,7 @@ function renderAll() {
 }
 
 /* INIT */
+buildSlicers();  
 loadData();
 setInterval(loadData, 60000);
 
