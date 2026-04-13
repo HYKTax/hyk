@@ -583,7 +583,7 @@ const TODAY = new Date();
 let RAW = [];
 
 async function loadData() {
-  const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSP-WFJVee7OU7RbP7g55ZXSB66gQF_8iPxwU5DKfGACf8Xit1N2Q_Gu6Yois8QoA/pub?gid=1845055850&single=true&output=csv&t=" + Date.now();
+  const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSP-WFJVee7OU7RbP7g55ZXSB66gQF_8iPxwU5DKfGACf8Xit1N2Q_Gu6Yois8QoA/pub?gid=1845055850&single=true&output=csv" + Date.now();
 
   const res = await fetch(url);
   const text = await res.text();
