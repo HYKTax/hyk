@@ -580,23 +580,52 @@
 <script>
 const TODAY = new Date();
 
-const RAW = [
-  {id:1,client:"John & Mary Smith",clientId:"XXX-1234",year:2024,type:"1040",filing:"MFJ",state:"WY",priority:"High",docsDate:"2025-02-10",docsOk:"Yes",missing:"",preparer:"Suresh Patel",prepStart:"2025-02-12",prepDone:"2025-02-18",reviewer:"Priya Shah",revStart:"2025-02-18",revDone:"2025-02-20",signoffBy:"Suresh Patel",sentDate:"2025-02-21",rcvDate:"2025-02-22",efileDate:"2025-02-24",ext:"No",origDue:"2025-04-15",extDue:"",status:"Filed",hours:4.5,fee:750,invoiced:"Yes",paid:"Yes",remarks:"Clean return"},
-  {id:2,client:"ABC Services LLC",clientId:"XX-5678",year:2024,type:"1120S",filing:"N/A",state:"WY",priority:"High",docsDate:"2025-02-20",docsOk:"Partial",missing:"Missing K-1",preparer:"Rahul Desai",prepStart:"2025-02-22",prepDone:"2025-03-05",reviewer:"Suresh Patel",revStart:"2025-03-05",revDone:"2025-03-08",signoffBy:"Rahul Desai",sentDate:"2025-03-09",rcvDate:"",efileDate:"",ext:"No",origDue:"2025-03-15",extDue:"2025-09-15",status:"In Review",hours:6.0,fee:1200,invoiced:"No",paid:"No",remarks:"Awaiting 8879 sign-off"},
-  {id:3,client:"Robert Johnson",clientId:"XXX-9012",year:2024,type:"1040",filing:"Single",state:"CA",priority:"Medium",docsDate:"2025-03-01",docsOk:"Yes",missing:"",preparer:"Priya Shah",prepStart:"2025-03-03",prepDone:"2025-03-10",reviewer:"",revStart:"",revDone:"",signoffBy:"",sentDate:"",rcvDate:"",efileDate:"",ext:"No",origDue:"2025-04-15",extDue:"",status:"Preparation",hours:3.5,fee:500,invoiced:"No",paid:"No",remarks:"Foreign income — Form 2555"},
-  {id:4,client:"Green Valley Farm LLC",clientId:"XX-3456",year:2024,type:"1065",filing:"N/A",state:"WY",priority:"Low",docsDate:"2025-03-15",docsOk:"No",missing:"Partnership agreement, K-1s",preparer:"",prepStart:"",prepDone:"",reviewer:"",revStart:"",revDone:"",signoffBy:"",sentDate:"",rcvDate:"",efileDate:"",ext:"Yes",origDue:"2025-04-15",extDue:"2025-09-15",status:"Docs Pending",hours:0,fee:900,invoiced:"No",paid:"No",remarks:"Extension filed; docs pending"},
-  {id:5,client:"Sandra Williams",clientId:"XXX-7890",year:2024,type:"1040",filing:"HoH",state:"TX",priority:"Medium",docsDate:"2025-01-28",docsOk:"Yes",missing:"",preparer:"Suresh Patel",prepStart:"2025-01-30",prepDone:"2025-02-04",reviewer:"Priya Shah",revStart:"2025-02-04",revDone:"2025-02-05",signoffBy:"Suresh Patel",sentDate:"2025-02-06",rcvDate:"2025-02-06",efileDate:"2025-02-07",ext:"No",origDue:"2025-04-15",extDue:"",status:"Filed",hours:3.0,fee:450,invoiced:"Yes",paid:"Yes",remarks:"EITC — documentation saved"},
-  {id:6,client:"Mountain Peak Corp",clientId:"XX-1122",year:2024,type:"1120",filing:"N/A",state:"WY",priority:"High",docsDate:"2025-03-01",docsOk:"Yes",missing:"",preparer:"Rahul Desai",prepStart:"2025-03-03",prepDone:"",reviewer:"",revStart:"",revDone:"",signoffBy:"",sentDate:"",rcvDate:"",efileDate:"",ext:"No",origDue:"2025-04-15",extDue:"",status:"Preparation",hours:2.0,fee:1800,invoiced:"No",paid:"No",remarks:"First year C-Corp, lots of setup"},
-  {id:7,client:"Emily Chen",clientId:"XXX-3344",year:2024,type:"1040",filing:"Single",state:"CA",priority:"Medium",docsDate:"2025-02-15",docsOk:"Yes",missing:"",preparer:"Priya Shah",prepStart:"2025-02-17",prepDone:"2025-02-24",reviewer:"Suresh Patel",revStart:"2025-02-24",revDone:"2025-02-26",signoffBy:"Priya Shah",sentDate:"2025-02-27",rcvDate:"2025-02-28",efileDate:"2025-03-01",ext:"No",origDue:"2025-04-15",extDue:"",status:"Filed",hours:2.5,fee:400,invoiced:"Yes",paid:"Yes",remarks:"RSU income, Schedule D"},
-  {id:8,client:"Sunrise Bakery LLC",clientId:"XX-5566",year:2024,type:"1065",filing:"N/A",state:"TX",priority:"Medium",docsDate:"2025-03-10",docsOk:"Partial",missing:"2024 depreciation schedule",preparer:"Suresh Patel",prepStart:"2025-03-12",prepDone:"",reviewer:"",revStart:"",revDone:"",signoffBy:"",sentDate:"",rcvDate:"",efileDate:"",ext:"Yes",origDue:"2025-03-15",extDue:"2025-09-15",status:"Sign-off Pending",hours:5.5,fee:1100,invoiced:"Yes",paid:"No",remarks:"Extension filed; 8879 sent"},
-  {id:9,client:"David Thompson",clientId:"XXX-7711",year:2024,type:"1040NR",filing:"N/A",state:"NY",priority:"High",docsDate:"2025-02-28",docsOk:"Yes",missing:"",preparer:"Rahul Desai",prepStart:"2025-03-02",prepDone:"2025-03-09",reviewer:"Suresh Patel",revStart:"2025-03-09",revDone:"",signoffBy:"",sentDate:"",rcvDate:"",efileDate:"",ext:"No",origDue:"2025-06-15",extDue:"",status:"In Review",hours:4.0,fee:650,invoiced:"No",paid:"No",remarks:"NRA — US source income only"},
-  {id:10,client:"Blue Ridge Foundation",clientId:"XX-9900",year:2024,type:"990",filing:"N/A",state:"WY",priority:"Low",docsDate:"2025-01-20",docsOk:"Yes",missing:"",preparer:"Priya Shah",prepStart:"2025-01-22",prepDone:"2025-02-01",reviewer:"Rahul Desai",revStart:"2025-02-01",revDone:"2025-02-03",signoffBy:"Priya Shah",sentDate:"2025-02-04",rcvDate:"2025-02-05",efileDate:"2025-02-10",ext:"No",origDue:"2025-05-15",extDue:"",status:"Filed",hours:3.5,fee:600,invoiced:"Yes",paid:"Yes",remarks:"Clean 990; public charity"},
-  {id:11,client:"Michael & Lisa Torres",clientId:"XXX-2233",year:2024,type:"1040",filing:"MFJ",state:"WY",priority:"Medium",docsDate:"2025-03-20",docsOk:"No",missing:"Rental income, 1099s",preparer:"",prepStart:"",prepDone:"",reviewer:"",revStart:"",revDone:"",signoffBy:"",sentDate:"",rcvDate:"",efileDate:"",ext:"No",origDue:"2025-04-15",extDue:"",status:"Docs Pending",hours:0,fee:700,invoiced:"No",paid:"No",remarks:"Rental property in AZ"},
-  {id:12,client:"Apex Logistics LLC",clientId:"XX-4488",year:2024,type:"1120S",filing:"N/A",state:"WY",priority:"High",docsDate:"2025-02-05",docsOk:"Yes",missing:"",preparer:"Suresh Patel",prepStart:"2025-02-07",prepDone:"2025-02-20",reviewer:"Priya Shah",revStart:"2025-02-20",revDone:"2025-02-24",signoffBy:"Suresh Patel",sentDate:"2025-02-25",rcvDate:"2025-02-27",efileDate:"2025-02-28",ext:"No",origDue:"2025-03-15",extDue:"",status:"Filed",hours:7.0,fee:1500,invoiced:"Yes",paid:"Yes",remarks:"Multi-state apportionment"},
-  {id:13,client:"Olivia Martinez",clientId:"XXX-6654",year:2024,type:"1040",filing:"Single",state:"FL",priority:"Low",docsDate:"2025-03-25",docsOk:"Yes",missing:"",preparer:"Rahul Desai",prepStart:"2025-03-27",prepDone:"",reviewer:"",revStart:"",revDone:"",signoffBy:"",sentDate:"",rcvDate:"",efileDate:"",ext:"No",origDue:"2025-04-15",extDue:"",status:"Preparation",hours:1.5,fee:350,invoiced:"No",paid:"No",remarks:"W-2 only — simple return"},
-  {id:14,client:"Clearwater Trust",clientId:"XX-7733",year:2024,type:"1041",filing:"N/A",state:"WY",priority:"Medium",docsDate:"2025-02-10",docsOk:"Yes",missing:"",preparer:"Priya Shah",prepStart:"2025-02-12",prepDone:"2025-02-22",reviewer:"Suresh Patel",revStart:"2025-02-22",revDone:"2025-02-25",signoffBy:"Priya Shah",sentDate:"2025-02-26",rcvDate:"2025-02-28",efileDate:"",ext:"No",origDue:"2025-04-15",extDue:"",status:"Sign-off Pending",hours:4.0,fee:950,invoiced:"Yes",paid:"No",remarks:"Irrevocable trust — DNI calc"},
-  {id:15,client:"James & Carol Park",clientId:"XXX-8822",year:2024,type:"1040",filing:"MFJ",state:"WA",priority:"Low",docsDate:"2025-01-15",docsOk:"Yes",missing:"",preparer:"Suresh Patel",prepStart:"2025-01-17",prepDone:"2025-01-25",reviewer:"Rahul Desai",revStart:"2025-01-25",revDone:"2025-01-28",signoffBy:"Suresh Patel",sentDate:"2025-01-29",rcvDate:"2025-01-30",efileDate:"2025-02-01",ext:"No",origDue:"2025-04-15",extDue:"",status:"Filed",hours:3.0,fee:500,invoiced:"Yes",paid:"Yes",remarks:"Early filer — refund expected"},
-];
+let RAW = [];
+
+async function loadData() {
+  const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSP-WFJVee7OU7RbP7g55ZXSB66gQF_8iPxwU5DKfGACf8Xit1N2Q_Gu6Yois8QoA/pub?gid=1845055850&single=true&output=csv&t=" + Date.now();
+
+  const res = await fetch(url);
+  const text = await res.text();
+
+  const rows = text.trim().split("\n").map(r => r.split(","));
+  const headers = rows[0];
+
+  RAW = rows.slice(1).map(row => {
+    let obj = {};
+    headers.forEach((h,i) => obj[h.trim()] = row[i]);
+
+    return {
+      id: Number(obj.id),
+      client: obj.client,
+      type: obj.type,
+      status: obj.status,
+      priority: obj.priority,
+      preparer: obj.preparer,
+      reviewer: obj.reviewer,
+      docsDate: obj.docsDate,
+      efileDate: obj.efileDate,
+      origDue: obj.origDue,
+      extDue: obj.extDue,
+      ext: obj.ext,
+      hours: Number(obj.hours || 0),
+      fee: Number(obj.fee || 0),
+      paid: obj.paid,
+      remarks: obj.remarks
+    };
+  });
+
+  refreshAll();
+
+  document.getElementById('refresh-time').textContent =
+    new Date().toLocaleTimeString();
+}
+
+/* LOAD DATA */
+loadData();
+
+/* AUTO REFRESH EVERY 60 SEC */
+setInterval(loadData, 60000);;
 
 const STATUS_STYLES = {
   "Filed":           "s-filed",
@@ -996,7 +1025,7 @@ document.getElementById('refresh-time').textContent =
   new Date().toLocaleTimeString('en-US', {hour:'2-digit',minute:'2-digit'});
 
 buildSlicers();
-refreshAll();
+
 </script>
 </body>
 </html>
