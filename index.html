@@ -1,58 +1,89 @@
-<script>
-/* ================= SAFE INIT ================= */
-document.addEventListener("DOMContentLoaded", () => {
-  init();
-});
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>HYK Tax Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+body { font-family: Arial; padding:20px; background:#f5f5f5; }
+.kpi-card { background:#fff;padding:10px;margin:5px;border-radius:6px;display:inline-block }
+table { width:100%; border-collapse:collapse; background:#fff; }
+td,th { padding:8px; border:1px solid #ddd; font-size:12px }
+</style>
+</head>
 
+<body>
+
+<h2>HYK TAX Dashboard</h2>
+<div id="refresh-time"></div>
+
+<div id="kpi-grid"></div>
+
+<br>
+
+<span id="table-count"></span>
+
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Client</th>
+<th>Type</th>
+<th>Status</th>
+<th>Priority</th>
+<th>Preparer</th>
+<th>Reviewer</th>
+<th>Docs</th>
+<th>E-file</th>
+<th>Hours</th>
+<th>Fee</th>
+<th>Paid</th>
+<th>Remarks</th>
+</tr>
+</thead>
+<tbody id="table-body"></tbody>
+</table>
+
+<script>
 const TODAY = new Date();
 let RAW = [];
 
-/* ================= CSV FETCH ================= */
+/* ================= CSV ================= */
 
-function parseCSV(text) {
-  return text.trim().split("\n").map(row =>
-    row.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g)
+function parseCSV(text){
+  return text.trim().split("\n").map(r =>
+    r.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g)
   );
 }
 
-function convertDate(val) {
-  if (!val) return "";
-  const d = new Date(val);
-  return isNaN(d) ? "" : d.toISOString().split("T")[0];
-}
-
-async function loadData() {
-  try {
+async function loadData(){
+  try{
     const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSP-WFJVee7OU7RbP7g55ZXSB66gQF_8iPxwU5DKfGACf8Xit1N2Q_Gu6Yois8QoA/pub?gid=1845055850&single=true&output=csv&t=" + Date.now();
 
     const res = await fetch(url);
     const text = await res.text();
     const rows = parseCSV(text);
 
-    // ✅ Skip top title rows (your sheet format)
-    const headers = rows[2].map(h => h.trim());
+    const headers = rows[2];
 
-    RAW = rows.slice(3).map((row, i) => {
+    RAW = rows.slice(3).map((row,i)=>{
       let obj = {};
-      headers.forEach((h, j) => obj[h] = row[j]);
+      headers.forEach((h,j)=> obj[h.trim()] = row[j]);
 
       return {
-        id: i + 1,
-        client: obj["Client Name"] || "",
-        type: obj["Return Type"] || "",
-        status: obj["Return Status"] || "",
-        priority: obj["Priority"] || "",
-        preparer: obj["Preparer Name"] || "",
-        reviewer: obj["Reviewer Name"] || "",
-        docsDate: convertDate(obj["Docs Received"]),
-        efileDate: convertDate(obj["E-file / Mail Date"]),
-        origDue: convertDate(obj["Original Due Date"]),
-        extDue: convertDate(obj["Extended Due Date"]),
-        ext: obj["Extension?"] || "No",
-        hours: parseFloat(obj["Time Spent (hrs)"]) || 0,
-        fee: Number((obj["Return Fees ($)"] || "0").replace(/[$,]/g, "")),
-        paid: obj["Payment Received?"] || "No",
-        remarks: obj["Remarks / Notes"] || ""
+        id:i+1,
+        client:obj["Client Name"]||"",
+        type:obj["Return Type"]||"",
+        status:obj["Return Status"]||"",
+        priority:obj["Priority"]||"",
+        preparer:obj["Preparer Name"]||"",
+        reviewer:obj["Reviewer Name"]||"",
+        docsDate:obj["Docs Received"]||"",
+        efileDate:obj["E-file / Mail Date"]||"",
+        hours:parseFloat(obj["Time Spent (hrs)"])||0,
+        fee:Number((obj["Return Fees ($)"]||"0").replace(/[$,]/g,"")),
+        paid:obj["Payment Received?"]||"",
+        remarks:obj["Remarks / Notes"]||""
       };
     });
 
@@ -60,50 +91,38 @@ async function loadData() {
 
     refreshAll();
 
-    const refreshEl = document.getElementById("refresh-time");
-    if (refreshEl) {
-      refreshEl.textContent = new Date().toLocaleTimeString();
-    }
+    document.getElementById("refresh-time").textContent =
+      "Last Updated: " + new Date().toLocaleTimeString();
 
-  } catch (err) {
-    console.error("❌ Load Error:", err);
-    alert("Failed to load Google Sheets data");
+  }catch(e){
+    console.error(e);
+    alert("❌ Failed loading sheet");
   }
-}
-
-/* ================= FILTER ================= */
-
-function getFiltered() {
-  return RAW;
 }
 
 /* ================= KPI ================= */
 
-function renderKPIs(data) {
+function renderKPIs(data){
   const el = document.getElementById("kpi-grid");
-  if (!el) return;
+  if(!el) return;
 
   el.innerHTML = `
-    <div class="kpi-card">
-      <div class="kpi-value">${data.length}</div>
-      <div class="kpi-label">Total Returns</div>
-    </div>
+    <div class="kpi-card">Total: ${data.length}</div>
+    <div class="kpi-card">Filed: ${data.filter(r=>r.status==="Filed").length}</div>
   `;
 }
 
 /* ================= TABLE ================= */
 
-function renderTable() {
-  const data = getFiltered();
-
-  const countEl = document.getElementById("table-count");
+function renderTable(){
   const tbody = document.getElementById("table-body");
+  const count = document.getElementById("table-count");
 
-  if (!countEl || !tbody) return;
+  if(!tbody || !count) return;
 
-  countEl.textContent = `${data.length} records`;
+  count.textContent = RAW.length + " records";
 
-  tbody.innerHTML = data.map(r => `
+  tbody.innerHTML = RAW.map(r=>`
     <tr>
       <td>${r.id}</td>
       <td>${r.client}</td>
@@ -112,37 +131,30 @@ function renderTable() {
       <td>${r.priority}</td>
       <td>${r.preparer}</td>
       <td>${r.reviewer}</td>
-      <td>${r.docsDate || "-"}</td>
-      <td>${r.efileDate || "-"}</td>
+      <td>${r.docsDate}</td>
+      <td>${r.efileDate}</td>
       <td>${r.hours}</td>
       <td>$${r.fee}</td>
       <td>${r.paid}</td>
-      <td>
-        <input value="${r.remarks}" 
-          style="width:150px;font-size:11px;padding:2px;"
-          onchange="updateRow(${r.id}, this.value)" />
-      </td>
+      <td>${r.remarks}</td>
     </tr>
   `).join("");
 }
 
-/* ================= UPDATE (OPTIONAL) ================= */
-
-function updateRow(id, remarks) {
-  console.log("Edit:", id, remarks);
-}
-
 /* ================= MAIN ================= */
 
-function refreshAll() {
+function refreshAll(){
   renderKPIs(RAW);
   renderTable();
 }
 
 /* ================= INIT ================= */
 
-function init() {
+document.addEventListener("DOMContentLoaded",()=>{
   loadData();
-  setInterval(loadData, 60000);
-}
+  setInterval(loadData,60000);
+});
 </script>
+
+</body>
+</html>
