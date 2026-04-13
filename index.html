@@ -1,8 +1,11 @@
 <script>
+/* ================= SAFE INIT ================= */
+document.addEventListener("DOMContentLoaded", () => {
+  init();
+});
+
 const TODAY = new Date();
 let RAW = [];
-
-const API_URL = "PASTE_YOUR_GOOGLE_SCRIPT_URL";
 
 /* ================= CSV FETCH ================= */
 
@@ -26,6 +29,7 @@ async function loadData() {
     const text = await res.text();
     const rows = parseCSV(text);
 
+    // ✅ Skip top title rows (your sheet format)
     const headers = rows[2].map(h => h.trim());
 
     RAW = rows.slice(3).map((row, i) => {
@@ -52,45 +56,52 @@ async function loadData() {
       };
     });
 
+    console.log("✅ Data Loaded:", RAW.length);
+
     refreshAll();
 
-    document.getElementById('refresh-time').textContent =
-      new Date().toLocaleTimeString();
+    const refreshEl = document.getElementById("refresh-time");
+    if (refreshEl) {
+      refreshEl.textContent = new Date().toLocaleTimeString();
+    }
 
   } catch (err) {
-    console.error(err);
-    alert("❌ Failed to load Google Sheets data");
+    console.error("❌ Load Error:", err);
+    alert("Failed to load Google Sheets data");
   }
 }
 
 /* ================= FILTER ================= */
 
-let activeFilters = { status: [], preparer: [], type: [], priority: [] };
-
 function getFiltered() {
   return RAW;
 }
 
-/* ================= KPIs ================= */
+/* ================= KPI ================= */
 
 function renderKPIs(data) {
-  const el = document.getElementById('kpi-grid');
-  if (!el) return; // prevents crash
+  const el = document.getElementById("kpi-grid");
+  if (!el) return;
 
-  el.innerHTML =
-    `<div class="kpi-card">
+  el.innerHTML = `
+    <div class="kpi-card">
       <div class="kpi-value">${data.length}</div>
       <div class="kpi-label">Total Returns</div>
-    </div>`;
+    </div>
+  `;
 }
 
 /* ================= TABLE ================= */
 
 function renderTable() {
   const data = getFiltered();
-  document.getElementById('table-count').textContent = `${data.length} records`;
 
-  const tbody = document.getElementById('table-body');
+  const countEl = document.getElementById("table-count");
+  const tbody = document.getElementById("table-body");
+
+  if (!countEl || !tbody) return;
+
+  countEl.textContent = `${data.length} records`;
 
   tbody.innerHTML = data.map(r => `
     <tr>
@@ -101,40 +112,24 @@ function renderTable() {
       <td>${r.priority}</td>
       <td>${r.preparer}</td>
       <td>${r.reviewer}</td>
-      <td>${r.docsDate}</td>
-      <td>${r.efileDate}</td>
+      <td>${r.docsDate || "-"}</td>
+      <td>${r.efileDate || "-"}</td>
       <td>${r.hours}</td>
       <td>$${r.fee}</td>
       <td>${r.paid}</td>
       <td>
-        <input value="${r.remarks}" onchange="updateRow(${r.id}, this.value)" />
+        <input value="${r.remarks}" 
+          style="width:150px;font-size:11px;padding:2px;"
+          onchange="updateRow(${r.id}, this.value)" />
       </td>
     </tr>
-  `).join('');
+  `).join("");
 }
 
-/* ================= UPDATE ================= */
+/* ================= UPDATE (OPTIONAL) ================= */
 
 function updateRow(id, remarks) {
-  const row = RAW.find(r => r.id === id);
-
-  fetch(API_URL, {
-    method: "POST",
-    body: JSON.stringify({
-      client: row.client,
-      type: row.type,
-      status: row.status,
-      priority: row.priority,
-      preparer: row.preparer,
-      reviewer: row.reviewer,
-      fee: row.fee,
-      paid: row.paid,
-      remarks: remarks
-    })
-  })
-  .then(res => res.json())
-  .then(() => alert("✅ Updated"))
-  .catch(() => alert("❌ Failed"));
+  console.log("Edit:", id, remarks);
 }
 
 /* ================= MAIN ================= */
@@ -150,6 +145,4 @@ function init() {
   loadData();
   setInterval(loadData, 60000);
 }
-
-document.addEventListener("DOMContentLoaded", init);
 </script>
