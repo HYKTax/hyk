@@ -1,71 +1,31 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>HYK Tax Dashboard</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
-
-<style>
-body { font-family: Arial; background:#f5f7fb; padding:20px; }
-h1 { margin-bottom:10px; }
-.card { background:#fff; padding:15px; border-radius:10px; margin-bottom:15px; }
-table { width:100%; border-collapse: collapse; }
-th, td { padding:8px; border-bottom:1px solid #ddd; text-align:left; }
-</style>
-</head>
-
-<body>
-
-<h1>HYK Tax Dashboard</h1>
-<p>Last Refresh: <span id="refresh-time"></span></p>
-
-<div class="card">
-  <canvas id="statusChart"></canvas>
-</div>
-
-<div class="card">
-  <table>
-    <thead>
-      <tr>
-        <th>Client</th>
-        <th>Status</th>
-        <th>Type</th>
-        <th>Fee</th>
-      </tr>
-    </thead>
-    <tbody id="table-body"></tbody>
-  </table>
-</div>
-
 <script>
 const TODAY = new Date();
 let RAW = [];
 
-/* ================= CSV PARSER ================= */
+const API_URL = "PASTE_YOUR_GOOGLE_SCRIPT_URL";
+
+/* ================= CSV FETCH ================= */
+
 function parseCSV(text) {
   return text.trim().split("\n").map(row =>
     row.match(/(".*?"|[^",]+)(?=\s*,|\s*$)/g)
   );
 }
 
-/* ================= DATE FORMAT ================= */
 function convertDate(val) {
   if (!val) return "";
   const d = new Date(val);
   return isNaN(d) ? "" : d.toISOString().split("T")[0];
 }
 
-/* ================= LOAD DATA ================= */
 async function loadData() {
   try {
     const url = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSP-WFJVee7OU7RbP7g55ZXSB66gQF_8iPxwU5DKfGACf8Xit1N2Q_Gu6Yois8QoA/pub?gid=1845055850&single=true&output=csv&t=" + Date.now();
 
     const res = await fetch(url);
     const text = await res.text();
-
     const rows = parseCSV(text);
 
-    // skip top 2 rows
     const headers = rows[2].map(h => h.trim());
 
     RAW = rows.slice(3).map((row, i) => {
@@ -73,68 +33,117 @@ async function loadData() {
       headers.forEach((h, j) => obj[h] = row[j]);
 
       return {
+        id: i + 1,
         client: obj["Client Name"] || "",
-        status: obj["Return Status"] || "",
         type: obj["Return Type"] || "",
-        fee: Number((obj["Return Fees ($)"] || "0").replace(/[$,]/g, ""))
+        status: obj["Return Status"] || "",
+        priority: obj["Priority"] || "",
+        preparer: obj["Preparer Name"] || "",
+        reviewer: obj["Reviewer Name"] || "",
+        docsDate: convertDate(obj["Docs Received"]),
+        efileDate: convertDate(obj["E-file / Mail Date"]),
+        origDue: convertDate(obj["Original Due Date"]),
+        extDue: convertDate(obj["Extended Due Date"]),
+        ext: obj["Extension?"] || "No",
+        hours: parseFloat(obj["Time Spent (hrs)"]) || 0,
+        fee: Number((obj["Return Fees ($)"] || "0").replace(/[$,]/g, "")),
+        paid: obj["Payment Received?"] || "No",
+        remarks: obj["Remarks / Notes"] || ""
       };
     });
 
     refreshAll();
 
-    document.getElementById("refresh-time").textContent =
+    document.getElementById('refresh-time').textContent =
       new Date().toLocaleTimeString();
 
   } catch (err) {
     console.error(err);
-    alert("❌ Failed to load Google Sheet");
+    alert("❌ Failed to load Google Sheets data");
   }
 }
 
+/* ================= FILTER ================= */
+
+let activeFilters = { status: [], preparer: [], type: [], priority: [] };
+
+function getFiltered() {
+  return RAW;
+}
+
+/* ================= KPIs ================= */
+
+function renderKPIs(data) {
+  document.getElementById('kpi-grid').innerHTML =
+    `<div class="kpi-card"><div class="kpi-value">${data.length}</div><div class="kpi-label">Total Returns</div></div>`;
+}
+
 /* ================= TABLE ================= */
+
 function renderTable() {
-  const tbody = document.getElementById("table-body");
-  tbody.innerHTML = RAW.map(r => `
+  const data = getFiltered();
+  document.getElementById('table-count').textContent = `${data.length} records`;
+
+  const tbody = document.getElementById('table-body');
+
+  tbody.innerHTML = data.map(r => `
     <tr>
+      <td>${r.id}</td>
       <td>${r.client}</td>
-      <td>${r.status}</td>
       <td>${r.type}</td>
+      <td>${r.status}</td>
+      <td>${r.priority}</td>
+      <td>${r.preparer}</td>
+      <td>${r.reviewer}</td>
+      <td>${r.docsDate}</td>
+      <td>${r.efileDate}</td>
+      <td>${r.hours}</td>
       <td>$${r.fee}</td>
+      <td>${r.paid}</td>
+      <td>
+        <input value="${r.remarks}" onchange="updateRow(${r.id}, this.value)" />
+      </td>
     </tr>
-  `).join("");
+  `).join('');
 }
 
-/* ================= CHART ================= */
-let chart;
-function renderChart() {
-  const counts = {};
-  RAW.forEach(r => {
-    counts[r.status] = (counts[r.status] || 0) + 1;
-  });
+/* ================= UPDATE ================= */
 
-  if (chart) chart.destroy();
+function updateRow(id, remarks) {
+  const row = RAW.find(r => r.id === id);
 
-  chart = new Chart(document.getElementById("statusChart"), {
-    type: "doughnut",
-    data: {
-      labels: Object.keys(counts),
-      datasets: [{ data: Object.values(counts) }]
-    }
-  });
+  fetch(API_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      client: row.client,
+      type: row.type,
+      status: row.status,
+      priority: row.priority,
+      preparer: row.preparer,
+      reviewer: row.reviewer,
+      fee: row.fee,
+      paid: row.paid,
+      remarks: remarks
+    })
+  })
+  .then(res => res.json())
+  .then(() => alert("✅ Updated"))
+  .catch(() => alert("❌ Failed"));
 }
 
-/* ================= REFRESH ================= */
+/* ================= MAIN ================= */
+
 function refreshAll() {
+  renderKPIs(RAW);
   renderTable();
-  renderChart();
 }
 
 /* ================= INIT ================= */
-window.onload = () => {
+
+function init() {
   loadData();
   setInterval(loadData, 60000);
-};
-</script>
+}
 
-</body>
-</html>
+init();
+</script>
